@@ -1,0 +1,251 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Maximum Likelihood Estimation and Conductance in the Neural Engineering
+ Framework
+\end_layout
+
+\begin_layout Section
+Main points
+\end_layout
+
+\begin_layout Enumerate
+The framework assumes linear synaptic integration, i.e.
+ the net current that drives a neuron is w'r, where w is a vector of synaptic
+ weights and r is a vector of presynaptic spike rates.
+ This is sort-of realistic sometimes, but there are important nonlinearities
+ in synapses.
+ NEF models also typically assume that spike rates vary as a cosine-like
+ function of stimulus variables (often true but not always) and that spike
+ rates are pretty reliable (unrealistic but not a strict constraint).
+ 
+\end_layout
+
+\begin_layout Enumerate
+Our goal is to extend the NEF to another regime in which divisive nonlinearities
+ are prominent, presynaptic spike rates are highly variable, and response
+ profiles are more Gaussian than cosine (also often true).
+ 
+\end_layout
+
+\begin_layout Enumerate
+In this case the simplest possible neural circuit may actually do something
+ quite similar to maximum likelihood estimation.
+ 
+\end_layout
+
+\begin_layout Section
+Maximum Likelihood Estimation of Stimulus
+\end_layout
+
+\begin_layout Standard
+If a presynaptic population has Gaussian tuning curves 
+\begin_inset Formula $r(s)$
+\end_inset
+
+ of equal width over stimulus value 
+\begin_inset Formula $s$
+\end_inset
+
+, uniform distribution of preferred stimuli, and Poisson spiking, then the
+ maximum likelihood estimate is 
+\begin_inset Formula 
+\[
+\hat{s}_{ML}=\frac{\sum_{i}r_{i}s_{i}}{\sum_{i}r_{i}}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $s_{i}$
+\end_inset
+
+ is the preferred stimulus and 
+\begin_inset Formula $r_{i}$
+\end_inset
+
+is the spike rate of the 
+\begin_inset Formula $i^{th}$
+\end_inset
+
+ neuron.
+ We can generalize this to non-uniform widths, etc.
+ and alternative functions of s (e.g.
+ 
+\begin_inset Formula $s^{2}$
+\end_inset
+
+) by finding weights 
+\begin_inset Formula $\psi_{i}$
+\end_inset
+
+ that optimally decode the desired function from normalized responses 
+\begin_inset Formula $\frac{r_{i}}{\sum_{i}r_{i}}$
+\end_inset
+
+.
+ This may be related to another regime of the NEF with Poisson spiking,
+ Gaussian tuning, and ML-like decoding rather than periodic spiking, cosine
+ tuning, and optimal linear decoding.
+ 
+\end_layout
+
+\begin_layout Standard
+However, it requires that we have feedforward division.
+ We need the above denominator to appear in the post-synaptic neuron.
+ This would probably be related to inhibition.
+ The circuit might look similar to the Parisien transform (see right hand
+ side of figure 1 in Parisien, C., Anderson, C.
+ H., & Eliasmith, C.
+ (2008).
+ Solving the problem of negative synaptic weights in cortical models.
+ Neural Computation, 20(6), 1473–94).
+ 
+\end_layout
+
+\begin_layout Section
+Division Mechanism
+\end_layout
+
+\begin_layout Standard
+[From Tripp 2012: Inhibitory shunting has been proposed as a particularly
+ simple divisive mechanism (e.g.
+ Carandini & Heeger, 1994; Kouh & Poggio, 2008).
+ Inhibitory shunting has a primarily divisive effect on membrane potential,
+ due to the similarity of GABA receptor reversal potential and typical resting
+ membrane potentials.
+ However, the situation is complicated by the fact that shunting also simultaneo
+usly changes the membrane time constant.
+ In single-compartment integrate-and-fire models, these two changes combine
+ to make the net effect of inhibition on a cell’s firing rate primarily
+ subtractive (Holt & Koch, 1997; Dayan & Abbott, 2001).
+ This does not seem to preclude division in more complex cell models, e.g.
+ when inhibitory and spike-related shunting occur in separate compartments.
+ Shunting may also play a part in more complex division mechanisms (Abbott
+ & Chance, 2005; Chance et al., 2002; Doiron et al., 2001; Prescott & Koninck,
+ 2003; S.
+ J.
+ Mitchell & Silver, 2003).]
+\end_layout
+
+\begin_layout Standard
+Chance, F.
+ S., Abbott, L.
+ F., & Reyes, A.
+ D.
+ (2002).
+ Gain modulation from background synaptic input.
+ Neuron, 35(4), 773–82.
+ 
+\end_layout
+
+\begin_layout Standard
+Fellous, J.-M., Rudolph, M., Destexhe, a, & Sejnowski, T.
+ .
+ (2003).
+ Synaptic background noise controls the input/output characteristics of
+ single cells in an in vitro model of in vivo activity.
+ Neuroscience, 122(3), 811–829.
+ 
+\end_layout
+
+\begin_layout Standard
+Mitchell, S.
+ J., & Silver, R.
+ A.
+ (2003).
+ Shunting inhibition modulates neuronal gain during synaptic excitation.
+ Neuron, 38(3), 433–45.
+ 
+\end_layout
+
+\begin_layout Standard
+Prescott, S.
+ a, & De Koninck, Y.
+ (2003).
+ Gain control of firing rate by shunting inhibition: roles of synaptic noise
+ and dendritic saturation.
+ Proceedings of the National Academy of Sciences of the United States of
+ America, 100(4), 2076–81.
+ 
+\end_layout
+
+\begin_layout Standard
+The first thing to figure out is how to get division from inhibition.
+ It looks like there are multiple ways (see papers) but we want a relatively
+ simple mechanism that we can use as an approximate model within the NEF.
+ We probably do not want to introduce: 1) spatially extended neurons (stick
+ with single compartment neurons).
+ 2) Saturation of 
+\begin_inset Formula $P_{s}$
+\end_inset
+
+ (probability of synaptic receptor being open) -- so we assume 
+\begin_inset Formula $P_{s}<<1$
+\end_inset
+
+.
+ 
+\end_layout
+
+\end_body
+\end_document
