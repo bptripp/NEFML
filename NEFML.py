@@ -16,7 +16,7 @@ def main():
     --------------------------------------------------------------'''
     
     ''' Stimulus '''
-    s = 3
+    s = 1
     
     s_range = 100
     
@@ -146,67 +146,64 @@ def main():
     
     # Voltage Thresholds
     post_thReset = -70.0 * np.power(10.0, -3)
-    post_thAp    = -30.0 * np.power(10.0, -3)
+    post_thAp    = -50.0 * np.power(10.0, -3)
     post_vAp     =  50.0 * np.power(10.0, -3)  # Peak Action Potential voltage
     
     # Specific Capacitance
-    post_cm = 10 * np.power(10.0, 2) 
+    post_cm = 10 * np.power(10.0, 3) 
     
     post_v = np.zeros(shape = (t_stop, 1))
-    t_lastSpike = 0
+    post_rate = np.zeros(shape = (t_stop, 1))
     
     # Membrane Potential
+    t_lastSpike = 0
     for time in np.arange(t_stop):
  
         rates = post_instRates[:, time]
-        timeSinceLastSpike = time - t_lastSpike 
+        timeLastSpike = time - t_lastSpike 
        
-        Xconductance = (rates * pre_preferredStim.T).sum() / pre_rMax
-        Iconductance = rates.sum() / pre_rMax 
+        Xcon = (rates * pre_preferredStim.T).sum() / pre_rMax
+        Icon = rates.sum() / pre_rMax
+        totalCon = Xcon + Icon
         
-        vInf = (Xconductance * post_XE) + (Iconductance * post_IE) \
-               / (Xconductance + Iconductance)
-               
-        vXexp = Xconductance * (post_thReset - post_XE) * \
-                np.exp(-(Xconductance + Iconductance) * timeSinceLastSpike / post_cm)
+        vInf = (Xcon * post_XE + Icon * post_IE) / totalCon
+        vK = (Xcon * (post_thReset - post_XE) + Icon * (post_thReset - post_IE)) / totalCon
+        vExp = np.exp(-totalCon * timeLastSpike / post_cm)
         
-        vIexp = Iconductance * (post_thReset - post_IE) * \
-                np.exp(-(Xconductance + Iconductance) * timeSinceLastSpike / post_cm)
-               
-#        print ("time=%i, timeSincelastSpike=%i, Xcon=%f, Icon=%f, vInf=%f, vXexp=%f, vIexp=%f" \
-#               %(time, timeSinceLastSpike, Xconductance, Iconductance, vInf, vXexp, vIexp))
-               
-        post_v[time] = vInf + vXexp + vIexp
+        post_v[time] = vInf + vK*vExp
         
+#        print( "time=%i, timeLastSpike=%i, Xcon=%f, Icon=%f, vInf=%f, vK=%f, vExp=%f" \
+#            %(time, timeLastSpike, Xcon, Icon, vInf, vK, vExp) )
+            
         if post_v[time] >= post_thAp:
             post_v[time] = post_vAp
             t_lastSpike = time
             #raw_input()
             
+#        # Firing Rate
+#        post_tIsi = np.log( (post_thAp*totalCon - Xcon*post_XE - Icon*post_IE ) / \
+#                             (post_thReset*totalCon - Xcon*post_XE - Icon*post_IE ) ) *\
+#                     post_cm / totalCon
+                     
+        #post_rate[time] = 1 / post_tIsi
+    
     # Plot post-synaptic Neuron Voltage
     plt.figure("Post Synaptic Membrane Potential")
     plt.title("Post Synaptic Membrane Potential, Stimulus %i, Avg Stimulus Est %f" \
               %(s, np.mean(post_sEstML[post_windowLen/2:])))
     plt.plot(np.arange(t_stop), post_v * np.power(10.0,3))
-    plt.plot(np.arange(t_stop), post_thAp * np.ones(shape = (t_stop, 1)) *np.power(10.0,3), 'r', label = 'AP Thresh')
+    plt.plot(np.arange(t_stop), post_thAp * np.ones(shape = (t_stop, 1)) * np.power(10.0,3), 'r', label = 'AP Thresh')
     ax = plt.gca()
     ax.set_xlabel('Time(ms)', x = 1)
     ax.set_ylabel("Membrane Potential(mV)")
-    ax.set_ylim([-300, 100])
     ax.legend()
     
-    f, (ax1, ax2) = plt.subplots(2, 1)
-    plt.title("Single AP profile [stimulus=%s]" %(s))
-    tRange = 1000;
-    ax1.plot(np.arange(tRange), post_v[0:tRange] * np.power(10.0,3))
-    ax2.plot(np.arange(tRange), post_v[0:tRange] * np.power(10.0,3))
-    plt.ylim([-300,100])
-    ax2.axhline(y = -30 * np.power(10,-3), linewidth=2, color='r')
+#    plt.figure("Post Synaptic Firing Rates")
+#    plt.plot(np.arange(t_stop), post_rate)
+     
     
     
-    
-    #Firing Rate
-#    totalCond = Xconductance + Iconductance
+
 #    
 #    post_tIsi = post_cm * \
 #                (totalCond * ((np.log(totalCond) * post_thReset) - post_thAp)) + \
