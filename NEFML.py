@@ -9,22 +9,20 @@ Created on Thu May 29 18:24:20 2014
 import numpy as np
 import matplotlib.pyplot as plt
 
-def main():
+def main(s):
     
     ''' -------------------------------------------------------------
     INPUT
     --------------------------------------------------------------'''
     
     ''' Stimulus '''
-    s = 1
-    
     s_range = 100
-    
+    #TODO add some error checks
     print ("Input Stimulus %i" %(s))
     
     
     ''' Time '''
-    t_stop = 6000 # time im ms
+    t_stop = 1000 # time im ms
     
     ''' -------------------------------------------------------------
     PRESYNAPTIC NEURON POPULATION
@@ -153,10 +151,11 @@ def main():
     post_cm = 10 * np.power(10.0, 3) 
     
     post_v = np.zeros(shape = (t_stop, 1))
-    post_rate = np.zeros(shape = (t_stop, 1))
+    post_rateCalc = np.zeros(shape = (t_stop, 1))
     
     # Membrane Potential
     t_lastSpike = 0
+    post_nSpikes = 0
     for time in np.arange(t_stop):
  
         rates = post_instRates[:, time]
@@ -178,51 +177,75 @@ def main():
         if post_v[time] >= post_thAp:
             post_v[time] = post_vAp
             t_lastSpike = time
+            post_nSpikes += 1.0
             #raw_input()
             
-#        # Firing Rate
-#        post_tIsi = np.log( (post_thAp*totalCon - Xcon*post_XE - Icon*post_IE ) / \
-#                             (post_thReset*totalCon - Xcon*post_XE - Icon*post_IE ) ) *\
-#                     post_cm / totalCon
+        # Firing Rate
+        # Theoretical Firing Rate
+        post_tIsi = np.log( (post_thAp*totalCon - Xcon*post_XE - Icon*post_IE ) / \
+                             (post_thReset*totalCon - Xcon*post_XE - Icon*post_IE ) ) \
+                    *(-post_cm / totalCon)
                      
-        #post_rate[time] = 1 / post_tIsi
+        post_rateCalc[time] = 1 / post_tIsi
+        
+    # Measured Firing Rate - Simple Binning
+    post_rateMeas = post_nSpikes / t_stop
+    post_rateCalcMean = np.mean(post_rateCalc)
+    post_rateCalcVar = np.var(post_rateCalc)
     
     # Plot post-synaptic Neuron Voltage
-    plt.figure("Post Synaptic Membrane Potential")
-    plt.title("Post Synaptic Membrane Potential, Stimulus %i, Avg Stimulus Est %f" \
-              %(s, np.mean(post_sEstML[post_windowLen/2:])))
-    plt.plot(np.arange(t_stop), post_v * np.power(10.0,3))
-    plt.plot(np.arange(t_stop), post_thAp * np.ones(shape = (t_stop, 1)) * np.power(10.0,3), 'r', label = 'AP Thresh')
-    ax = plt.gca()
-    ax.set_xlabel('Time(ms)', x = 1)
-    ax.set_ylabel("Membrane Potential(mV)")
-    ax.legend()
+#    plt.figure("Post Synaptic Membrane Potential")
+#    plt.title("Post Synaptic Membrane Potential, Stimulus %i, Avg Stimulus Est %f" \
+#              %(s, np.mean(post_sEstML[post_windowLen/2:])))
+#    plt.plot(np.arange(t_stop), post_v * np.power(10.0,3))
+#    plt.plot(np.arange(t_stop), post_thAp * np.ones(shape = (t_stop, 1)) * np.power(10.0,3), 'r', label = 'AP Thresh')
+#    ax = plt.gca()
+#    ax.set_xlabel('Time(ms)', x = 1)
+#    ax.set_ylabel("Membrane Potential(mV)")
+#    ax.legend()
     
 #    plt.figure("Post Synaptic Firing Rates")
-#    plt.plot(np.arange(t_stop), post_rate)
-     
+#    plt.plot(np.arange(t_stop), post_rateCalc, label='Measured Rate')
+#    ax = plt.gca()
+#    ax.set_xlabel('Time(ms)', x = 1)
+#    ax.set_ylabel("Firing Rate")
+#    plt.axhline(y=post_rateMeas, color='red', linewidth=2, label='Measured Rate')
+#    plt.legend()
     
-    
+    return(post_rateMeas, post_rateCalcMean, post_rateCalcVar)
 
-#    
-#    post_tIsi = post_cm * \
-#                (totalCond * ((np.log(totalCond) * post_thReset) - post_thAp)) + \
-#                ( Xconductance * post_XE * ( 1 - np.log(totalCond)) ) + \
-#                ( Iconductance * post_IE * ( 1 - np.log(totalCond)) ) \
-#                / \
-#                (totalCond * ( post_thReset*totalCond - Xconductance*post_XE - Iconductance*post_IE) )
-#                
-#    print post_tIsi           
-     
     
-     
-    
-    
+       
 
 if __name__ == "__main__":
     
     #pyplot interactive mode - do not need to close windows after each run
     plt.ion()
-    main()
+    stimulus_set = np.arange(100)
+    
+    measRate = np.zeros(shape = len(stimulus_set))
+    calcRate = np.zeros(shape = len(stimulus_set))
+    calcRateVar = np.zeros(shape = len(stimulus_set))
+    
+    for idx, stimulus in enumerate(stimulus_set):
+        measRate[idx], calcRate[idx], calcRateVar[idx] = main(stimulus)
+        
+    plt.figure("Post Synaptic Neuro")
+    plt.title("PostSynaptic Neuron Tuning Curve (Conductance Model)")
+    plt.plot(stimulus_set, measRate, label = 'Mean Firing Rate (measured)')
+    plt.plot(stimulus_set, calcRate, 'r--', label = 'Mean FiringRate (calculated)' )
+    ax = plt.gca()
+    ax.set_xlabel('Stimulus')
+    ax.set_ylabel('Firing Rate')
+    plt.legend()
+    
+    # Plot Variance Vertical Lines
+    for idx, stimulus in enumerate(stimulus_set):
+        plt.plot([stimulus, stimulus], [(calcRate[idx] + calcRateVar[idx]), \
+                                        (calcRate[idx] - calcRateVar[idx])], 'k')
+                                        
+    
+    
+    
     
    
