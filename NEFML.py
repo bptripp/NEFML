@@ -161,8 +161,8 @@ def main(s):
         rates = post_instRates[:, time]
         timeLastSpike = time - t_lastSpike 
        
-        Xcon = (rates * pre_preferredStim.T).sum() / pre_rMax
-        Icon = rates.sum() / pre_rMax
+        Xcon = (rates * pre_preferredStim.T).sum() 
+        Icon = rates.sum()
         totalCon = Xcon + Icon
         
         vInf = (Xcon * post_XE + Icon * post_IE) / totalCon
@@ -194,23 +194,23 @@ def main(s):
     post_rateCalcVar = np.var(post_rateCalc)
     
     # Plot post-synaptic Neuron Voltage
-#    plt.figure("Post Synaptic Membrane Potential")
-#    plt.title("Post Synaptic Membrane Potential, Stimulus %i, Avg Stimulus Est %f" \
-#              %(s, np.mean(post_sEstML[post_windowLen/2:])))
-#    plt.plot(np.arange(t_stop), post_v * np.power(10.0,3))
-#    plt.plot(np.arange(t_stop), post_thAp * np.ones(shape = (t_stop, 1)) * np.power(10.0,3), 'r', label = 'AP Thresh')
-#    ax = plt.gca()
-#    ax.set_xlabel('Time(ms)', x = 1)
-#    ax.set_ylabel("Membrane Potential(mV)")
-#    ax.legend()
+    plt.figure("Post Synaptic Membrane Potential")
+    plt.title("Post Synaptic Membrane Potential, Stimulus %i, Avg Stimulus Est %f" \
+              %(s, np.mean(post_sEstML[post_windowLen/2:])))
+    plt.plot(np.arange(t_stop), post_v * np.power(10.0,3))
+    plt.plot(np.arange(t_stop), post_thAp * np.ones(shape = (t_stop, 1)) * np.power(10.0,3), 'r', label = 'AP Thresh')
+    ax = plt.gca()
+    ax.set_xlabel('Time(ms)', x = 1)
+    ax.set_ylabel("Membrane Potential(mV)")
+    ax.legend()
     
-#    plt.figure("Post Synaptic Firing Rates")
-#    plt.plot(np.arange(t_stop), post_rateCalc, label='Measured Rate')
-#    ax = plt.gca()
-#    ax.set_xlabel('Time(ms)', x = 1)
-#    ax.set_ylabel("Firing Rate")
-#    plt.axhline(y=post_rateMeas, color='red', linewidth=2, label='Measured Rate')
-#    plt.legend()
+    plt.figure("Post Synaptic Firing Rates")
+    plt.plot(np.arange(t_stop), post_rateCalc, label='Calculated Rate')
+    ax = plt.gca()
+    ax.set_xlabel('Time(ms)', x = 1)
+    ax.set_ylabel("Firing Rate")
+    plt.axhline(y=post_rateMeas, color='red', linewidth=2, label='Measured Rate')
+    plt.legend()
     
     return(post_rateMeas, post_rateCalcMean, post_rateCalcVar)
 
@@ -222,6 +222,7 @@ if __name__ == "__main__":
     #pyplot interactive mode - do not need to close windows after each run
     plt.ion()
     stimulus_set = np.arange(100)
+    #stimulus_set = [80]
     
     measRate = np.zeros(shape = len(stimulus_set))
     calcRate = np.zeros(shape = len(stimulus_set))
@@ -243,6 +244,13 @@ if __name__ == "__main__":
     for idx, stimulus in enumerate(stimulus_set):
         plt.plot([stimulus, stimulus], [(calcRate[idx] + calcRateVar[idx]), \
                                         (calcRate[idx] - calcRateVar[idx])], 'k')
+                                        
+    plt.figure('Post Synaptic Response Variance')
+    ax = plt.gca()
+    ax.set_xlabel('Stimulus')
+    ax.set_ylabel('Variance')
+    plt.plot(stimulus_set, calcRateVar)
+    plt.title('Post Synaptic Firing Rate Variance')
                                         
     
     
