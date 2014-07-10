@@ -3,7 +3,10 @@ Created on Thu May 29 18:24:20 2014
 
 @author: salman Khan
 
-     MAXIMUM LIKLIEHOOD DECODER 1 Dimensional
+     Conductance model based on maximum likelihood decoding - 1D stimulus
+     
+     Excitatory conductance = numerator ML decoding   = sum (rate x preferred stimulus)
+     Inhibitory conductance = denominator ML decoding = sum (rate)
 
 --------------------------------------------------------------------------------------"""
 import numpy as np
@@ -161,8 +164,8 @@ def main(s):
         rates = post_instRates[:, time]
         timeLastSpike = time - t_lastSpike 
        
-        Xcon = (rates * pre_preferredStim.T).sum() 
-        Icon = rates.sum()
+        Xcon = (rates * pre_preferredStim.T).sum() / 100.0
+        Icon = rates.sum() / 100.0
         totalCon = Xcon + Icon
         
         vInf = (Xcon * post_XE + Icon * post_IE) / totalCon
@@ -186,31 +189,34 @@ def main(s):
                              (post_thReset*totalCon - Xcon*post_XE - Icon*post_IE ) ) \
                     *(-post_cm / totalCon)
                      
-        post_rateCalc[time] = 1 / post_tIsi
+        post_rateCalc[time] = 1 / (post_tIsi * np.power(10.0, -3))
         
     # Measured Firing Rate - Simple Binning
-    post_rateMeas = post_nSpikes / t_stop
+    post_rateMeas = post_nSpikes / t_stop * np.power(10.0, 3)
+    # average over [post_window: end], include only reliable rate estimates
     post_rateCalcMean = np.mean(post_rateCalc)
-    post_rateCalcVar = np.var(post_rateCalc)
+    post_rateCalcVar = np.var(post_rateCalc[post_windowLen/2:])
     
     # Plot post-synaptic Neuron Voltage
-    plt.figure("Post Synaptic Membrane Potential")
-    plt.title("Post Synaptic Membrane Potential, Stimulus %i, Avg Stimulus Est %f" \
-              %(s, np.mean(post_sEstML[post_windowLen/2:])))
-    plt.plot(np.arange(t_stop), post_v * np.power(10.0,3))
-    plt.plot(np.arange(t_stop), post_thAp * np.ones(shape = (t_stop, 1)) * np.power(10.0,3), 'r', label = 'AP Thresh')
-    ax = plt.gca()
-    ax.set_xlabel('Time(ms)', x = 1)
-    ax.set_ylabel("Membrane Potential(mV)")
-    ax.legend()
-    
-    plt.figure("Post Synaptic Firing Rates")
-    plt.plot(np.arange(t_stop), post_rateCalc, label='Calculated Rate')
-    ax = plt.gca()
-    ax.set_xlabel('Time(ms)', x = 1)
-    ax.set_ylabel("Firing Rate")
-    plt.axhline(y=post_rateMeas, color='red', linewidth=2, label='Measured Rate')
-    plt.legend()
+#    plt.figure("Post Synaptic Membrane Potential")
+#    plt.title("Post Synaptic Membrane Potential, Stimulus %i, Avg Stimulus ML Est %0.2f" \
+#              %(s, np.mean(post_sEstML[post_windowLen/2:]) ))
+#    plt.plot(np.arange(t_stop), post_v * np.power(10.0,3))
+#    plt.plot(np.arange(t_stop), post_thAp * np.ones(shape = (t_stop, 1)) * np.power(10.0,3), 'r', label = 'AP Thresh')
+#    ax = plt.gca()
+#    ax.set_xlabel('Time(ms)', x = 1)
+#    ax.set_ylabel("Membrane Potential(mV)")
+#    ax.text(100, -75, 'Num Spikes %i, Mean Firing Rate = %0.2f' \
+#            %(post_nSpikes, post_rateCalcMean), fontsize = 12)
+#    ax.legend()
+#    
+#    plt.figure("Post Synaptic Firing Rates")
+#    plt.plot(np.arange(t_stop), post_rateCalc, label='Calculated Rate')
+#    ax = plt.gca()
+#    ax.set_xlabel('Time(ms)', x = 1)
+#    ax.set_ylabel("Firing Rate")
+#    plt.axhline(y=post_rateMeas, color='red', linewidth=2, label='Measured Rate')
+#    plt.legend()
     
     return(post_rateMeas, post_rateCalcMean, post_rateCalcVar)
 
@@ -231,8 +237,8 @@ if __name__ == "__main__":
     for idx, stimulus in enumerate(stimulus_set):
         measRate[idx], calcRate[idx], calcRateVar[idx] = main(stimulus)
         
-    plt.figure("Post Synaptic Neuro")
-    plt.title("PostSynaptic Neuron Tuning Curve (Conductance Model)")
+    plt.figure("Post Synaptic Neuron")
+    plt.title("Post-Synaptic Neuron Tuning Curve (Conductance Model)")
     plt.plot(stimulus_set, measRate, label = 'Mean Firing Rate (measured)')
     plt.plot(stimulus_set, calcRate, 'r--', label = 'Mean FiringRate (calculated)' )
     ax = plt.gca()
@@ -242,10 +248,10 @@ if __name__ == "__main__":
     
     # Plot Variance Vertical Lines
     for idx, stimulus in enumerate(stimulus_set):
-        plt.plot([stimulus, stimulus], [(calcRate[idx] + calcRateVar[idx]), \
-                                        (calcRate[idx] - calcRateVar[idx])], 'k')
+        plt.plot([stimulus, stimulus], [(calcRate[idx] + calcRateVar[idx]/2), \
+                                        (calcRate[idx] - calcRateVar[idx]/2)], 'k')
                                         
-    plt.figure('Post Synaptic Response Variance')
+    plt.figure('Post Synaptic Firing Rate Variance')
     ax = plt.gca()
     ax.set_xlabel('Stimulus')
     ax.set_ylabel('Variance')
