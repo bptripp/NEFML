@@ -156,7 +156,7 @@ def main(s):
     post_IE = -70.0 * np.power(10.0, -3)
     
     # Voltage Thresholds
-    post_thReset = -70.0 * np.power(10.0, -3)
+    post_thReset = -80.0 * np.power(10.0, -3)
     post_thAp    = -50.0 * np.power(10.0, -3)
     post_vAp     =  50.0 * np.power(10.0, -3)  # Peak Action Potential voltage
     
@@ -171,12 +171,33 @@ def main(s):
     t_lastSpike  = 0
     post_nSpikes = 0
     for time in np.arange(t_stop):
+        
+#        raw_input('Continue?')
  
         rates = post_instRates[:, time] / pre_rMax
         timeLastSpike = time - t_lastSpike 
        
-        Xcon = (rates * pre_preferredStim.T).sum()
-        Icon = rates.sum()/ pre_n
+        XconBas = (rates * pre_preferredStim.T).sum()
+        IconBas = rates.sum()/ pre_n
+        
+        ''' Modified Conductances '''
+        alpha2 = 0.0
+        alpha1 = 1.00
+        alpha0 = 0.00
+        
+        Icon2 = alpha2*np.power(XconBas, 2.0) + alpha1*XconBas + alpha0*IconBas
+        Xcon2 = XconBas - ( (post_thReset - post_IE) / (post_thReset - post_XE) ) * \
+                 ( alpha2*np.power(XconBas, 2.0) + alpha1*XconBas + (alpha0 - 1)*IconBas )
+        
+#        print  ("XconBas %0.2f, IconBase = %0.2f, Xcon2 = %0.2f, Icon2 = %0.2f" \
+#            %(XconBas, IconBas, Xcon2,Icon2 ))
+                 
+        Xcon = Xcon2
+        Icon = Icon2
+#        Xcon = XconBas
+#        Icon = IconBas
+        
+        # Membrane Potential Calculation
         totalCon = Xcon + Icon
         
         vInf = (Xcon * post_XE + Icon * post_IE) / totalCon
@@ -184,9 +205,8 @@ def main(s):
         vExp = np.exp(-totalCon * timeLastSpike / post_cm)
         
         post_v[time] = vInf + vK*vExp
-#        print "post Membrane Potential %f" %post_v[time]
-#        print( "time=%i, timeLastSpike=%i, Xcon=%f, Icon=%f, vInf=%f, vK=%f, vExp=%f" \
-#            %(time, timeLastSpike, Xcon, Icon, vInf, vK, vExp) )
+#        print( "time=%i: post Membrane Potential=%f timeLastSpike=%i, Xcon=%f, Icon=%f, vInf=%f, vK=%f, vExp=%f" \
+#            %(time, post_v[time], timeLastSpike, Xcon, Icon, vInf, vK, vExp) )
             
         if post_v[time] >= post_thAp:
 #            post_v[time] = post_vAp
@@ -201,13 +221,18 @@ def main(s):
             post_nSpikes += 1.0
 
             
-        # Firing Rate
-        # Theoretical Firing Rate
+        ''' Firing Rate '''
+        # Theoretical Firing Rate - Actual
         post_tIsi = np.log( (post_thAp*totalCon - Xcon*post_XE - Icon*post_IE ) / \
-                             (post_thReset*totalCon - Xcon*post_XE - Icon*post_IE ) ) \
+                            (post_thReset*totalCon - Xcon*post_XE - Icon*post_IE ) ) \
                     *(-post_cm / totalCon)
-                     
         post_rateCalc[time] = 1 / (post_tIsi * np.power(10.0, -3))
+        
+        # Estimate using approx ln(1+x) = x
+#        post_rateCalc[time] = \
+#            ( Xcon*(post_thReset - post_XE) + Icon*(post_thReset - post_IE) ) \
+#            / ( post_cm *(post_thReset - post_thAp) ) * np.power(10.0, 3)
+        
         
     # Measured Firing Rate - Simple Binning
     post_rateMeas = post_nSpikes / t_stop * np.power(10.0, 3)
@@ -216,10 +241,10 @@ def main(s):
     post_rateCalcStd = np.std(post_rateCalc[post_windowLen/2:])
   
     
-    print ("Stimulus %i, Post Synaptic Spikes %i, Measured Rate %0.2f" \
-            %(s, post_nSpikes, post_rateMeas) )
+    print ("Stimulus %i, Post Synaptic Spikes %i, Measured Mean Rate %0.2f, Mean Calculated Rate %0.2f" \
+            %(s, post_nSpikes, post_rateMeas, post_rateCalcMean) )
     
-    # Plot post-synaptic Neuron Voltage
+    #Plot post-synaptic Neuron Voltage
 #    plt.figure("Post Synaptic Membrane Potential")
 #    plt.title("Post Synaptic Membrane Potential, Stimulus %i, Avg Stimulus ML Est %0.2f" \
 #              %(s, np.mean(post_sEstML[post_windowLen/2:]) ))
@@ -234,7 +259,7 @@ def main(s):
 #    ax.text(100, -75, 'Num Spikes %i, Mean Firing Rate = %0.2f' \
 #            %(post_nSpikes, post_rateCalcMean), fontsize = 12)
 #    ax.legend()
-    
+#    
 #    plt.figure("Post Synaptic Firing Rates")
 #    plt.plot(np.arange(t_stop), post_rateCalc, label='Calculated Rate')
 #    ax = plt.gca()
@@ -252,14 +277,19 @@ if __name__ == "__main__":
     plt.ion()
     stimulus_set = np.arange(100)
 #    stimulus_set = [34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45]
-#    stimulus_set = [90]
+#    stimulus_set = [30]
     
-    measRate = np.zeros(shape = len(stimulus_set))
-    calcRate = np.zeros(shape = len(stimulus_set))
-    calcRateStd = np.zeros(shape = len(stimulus_set))
+    iterations = 2;
     
-    for idx, stimulus in enumerate(stimulus_set):
-        measRate[idx], calcRate[idx], calcRateStd[idx] = main(stimulus)
+    measRate = np.zeros(shape = (len(stimulus_set), iterations))
+    calcRate = np.zeros(shape = (len(stimulus_set), iterations))
+    calcRateStd =  np.zeros(shape = (len(stimulus_set), iterations))
+    
+    for ii in np.arange(iterations):
+        print("Iteration no %i" %ii)
+    
+        for idx, stimulus in enumerate(stimulus_set):
+            measRate[idx][ii], calcRate[idx][ii], calcRateStd[idx][ii] = main(stimulus)
         
     plt.figure("Post Synaptic Neuron")
     plt.title("Post-Synaptic Neuron Tuning Curve (Conductance Model)")
@@ -282,6 +312,10 @@ if __name__ == "__main__":
     plt.plot(stimulus_set, calcRateStd)
     plt.title('Post Synaptic Firing Rate standard Deviation')
   
+    plt.figure("Mean Firing Rates")
+    plt.plot(stimulus_set, measRate.mean(axis=1), label ='Mean')
+    plt.figure("Firing Rate standard deviation")
+    plt.plot(stimulus_set, measRate.std(axis=1), label ='standard deviation')
     
     
     
